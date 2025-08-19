@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OnRampAI — Offline Outreach Studio</title>
+  <meta name="description" content="One-file, no-subscription outreach & personalization studio. Import leads CSV, compose with variables + spintax, generate emails, export CSV. All client-side.">
+  <style>
+    :root{
+      --bg:#0b0f14; --card:#121821; --muted:#1a2130; --text:#e6edf3; --sub:#9fb0c3; --acc:#5fd1a6; --acc2:#7fb7ff; --bad:#ff6b6b;
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,#0b0f14 0%, #0e131a 100%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
+    a{color:var(--acc)}
+    .container{max-width:1100px;margin:0 auto;padding:20px}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin:10px 0 20px 0}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:grid;place-items:center;color:#071018;font-weight:800}
+    .title{font-size:20px;font-weight:700}
+    .tag{font-size:12px;color:var(--sub)}
+    .card{background:var(--card);border:1px solid #223042;border-radius:var(--radius);padding:18px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+    .stack{display:flex;flex-direction:column;gap:10px}
+    .muted{color:var(--sub)}
+    input[type="text"],input[type="number"],textarea{width:100%;background:#0e131b;border:1px solid #233244;border-radius:12px;padding:10px 12px;color:var(--text);font:inherit}
+    textarea{min-height:160px;resize:vertical}
+    .btn{background:linear-gradient(135deg,#1f2a39,#182233);color:var(--text);border:1px solid #2b3c52;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer}
+    .btn:hover{filter:brightness(1.1)}
+    .btn.acc{background:linear-gradient(135deg,#5fd1a6,#58b693);color:#062019;border:0}
+    .btn.bad{background:linear-gradient(135deg,#ff6b6b,#e85757);color:#2b0505;border:0}
+    .pill{display:inline-flex;gap:8px;align-items:center;background:#0f1722;border:1px solid #25344a;color:var(--sub);border-radius:999px;padding:6px 10px;font-size:12px}
+    nav.tabs{display:flex;gap:8px;flex-wrap:wrap}
+    nav.tabs button{background:#0f1722;border:1px solid #25344a;border-radius:999px;color:var(--text);padding:8px 12px;cursor:pointer}
+    nav.tabs button.active{background:linear-gradient(135deg,#203049,#1b2640);border-color:#355074}
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid #223042;padding:8px 6px;text-align:left;font-size:14px}
+    .footer{margin-top:24px;color:#86a0ba;font-size:12px;text-align:center}
+    .alert{padding:10px 12px;border-radius:12px;background:#101826;border:1px solid #2b3b54;color:#cfe8ff}
+    .hidden{display:none}
+    .kbd{background:#0e141d;border:1px solid #2a3a52;border-radius:8px;padding:2px 6px;font-size:12px}
+    .code{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    .hr{height:1px;background:linear-gradient(90deg,transparent,#233244,transparent);margin:12px 0}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">OA</div>
+        <div>
+          <div class="title">OnRampAI</div>
+          <div class="tag">No‑subscription outreach & personalization — runs 100% in your browser.</div>
+        </div>
+      </div>
+      <div class="pill">💾 Data saved locally • 🔌 Works offline • 🧰 One file</div>
+    </header>
+
+    <div class="card" id="intro">
+      <div class="row">
+        <div class="stack">
+          <h2 style="margin:0">Build & ship without subscriptions</h2>
+          <p class="muted">Import a CSV of leads, write a template with variables + spintax, generate personalized emails, and export — all client‑side. No accounts, no credits, no tracking.</p>
+          <div class="alert">Tip: You can deploy this single file as a website (GitHub Pages, Netlify, Vercel static) and charge for access with a simple license key (optional) — built‑in below.</div>
+          <div class="stack" style="flex-direction:row;gap:10px;flex-wrap:wrap">
+            <button class="btn acc" onclick="showTab('compose')">Start composing</button>
+            <label class="btn">
+              <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="handleCSVUpload(event)">
+              Import leads CSV
+            </label>
+            <button class="btn" onclick="downloadSample()">Download sample CSV</button>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card" style="background:#0f1722">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <strong>Quick how‑to</strong>
+              <span class="kbd">[[ field ? yes | no ]]</span>
+            </div>
+            <div class="hr"></div>
+            <ol class="muted">
+              <li>Import your leads CSV (headers like <span class="code">name, company, email, title, notes</span>).</li>
+              <li>Write a subject/body using variables (<span class="code">{{name}}</span>) and spintax (<span class="code">{hi|hey|hello}</span>).</li>
+              <li>Use conditionals: <span class="code">[[notes? I loved your note about {{notes}}. | ]]</span></li>
+              <li>Generate messages → review → export CSV or copy to clipboard.</li>
+            </ol>
+          </div>
+          <div class="card" style="background:#0f1722;margin-top:10px">
+            <strong>Monetize (optional)</strong>
+            <div class="hr"></div>
+            <p class="muted">Flip on <em>Require License</em> below and enter the keys you sell (manually or via any checkout). It’s client‑side — basic deterrence, not bank‑grade — but fast to launch.</p>
+            <div style="display:flex;gap:10px;align-items:center">
+              <label><input type="checkbox" id="toggleLicense" onchange="toggleLicenseRequired()"> Require license</label>
+              <input type="text" id="licenseKeyInput" placeholder="Enter license key to unlock" oninput="checkLicense()" style="max-width:260px">
+              <span id="licenseStatus" class="muted">Unlocked (free mode)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <nav class="tabs" id="tabs">
+        <button class="active" data-tab="compose" onclick="showTab('compose')">✍️ Compose</button>
+        <button data-tab="leads" onclick="showTab('leads')">📇 Leads</button>
+        <button data-tab="generate" onclick="showTab('generate')">⚙️ Generate</button>
+        <button data-tab="export" onclick="showTab('export')">📤 Export</button>
+        <button data-tab="help" onclick="showTab('help')">❓ Help</button>
+      </nav>
+
+      <div id="tab-content" style="margin-top:12px">
+        <!-- Compose -->
+        <section id="compose" class="stack">
+          <div class="row">
+            <div class="stack">
+              <label>Subject Template</label>
+              <input id="subjectTpl" type="text" placeholder="{Quick one|Idea} for {{company}}" />
+              <small class="muted">Use variables from your CSV headers, e.g. <span class="code">{{name}}</span>, <span class="code">{{company}}</span>. Spintax with <span class="code">{alt1|alt2}</span>.</small>
+            </div>
+            <div class="stack">
+              <label>From Name (optional)</label>
+              <input id="fromName" type="text" placeholder="Alex from OnRampAI" />
+            </div>
+          </div>
+          <div class="stack">
+            <label>Body Template</label>
+            <textarea id="bodyTpl" placeholder="{Hi|Hey|Hello} {{name}},
+
+I help {{company}} type teams get {{benefit}} without {{pain}}. [[notes? Loved your post about {{notes}}.|]]
+
+3 quick wins we can deliver this week:
+- {{win1}}
+- {{win2}}
+- {{win3}}
+
+Worth a {{{chat|10‑min call}}}?
+— {{fromName}}"></textarea>
+          </div>
+          <div class="row">
+            <div class="stack">
+              <label>Default values (JSON)</label>
+              <textarea id="defaultsJson" placeholder='{"benefit":"more qualified demos","pain":"another tool","win1":"optimize landing","win2":"build 3 emails","win3":"set up tracking"}'></textarea>
+            </div>
+            <div class="stack">
+              <label>Variations per lead</label>
+              <input id="variations" type="number" min="1" max="5" value="1" />
+              <small class="muted">Each variation spins the spintax independently.</small>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn acc" onclick="saveProject()">💾 Save</button>
+            <button class="btn" onclick="loadProject()">📂 Load</button>
+            <button class="btn bad" onclick="clearProject()">🗑️ Clear</button>
+          </div>
+        </section>
+
+        <!-- Leads -->
+        <section id="leads" class="stack hidden">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <label class="btn"><input type="file" id="csvInput2" accept=".csv" style="display:none" onchange="handleCSVUpload(event)">Import CSV</label>
+            <button class="btn" onclick="downloadSample()">Download sample</button>
+            <button class="btn" onclick="addRow()">Add row</button>
+            <span class="muted" id="leadCount">0 leads</span>
+          </div>
+          <div class="hr"></div>
+          <div class="stack">
+            <table id="leadTable">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Generate -->
+        <section id="generate" class="stack hidden">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <button class="btn acc" onclick="generateAll()">Generate messages</button>
+            <button class="btn" onclick="copyAll()">Copy all to clipboard</button>
+            <span class="muted" id="genCount">Nothing generated yet</span>
+          </div>
+          <div class="hr"></div>
+          <div id="output" class="stack"></div>
+        </section>
+
+        <!-- Export -->
+        <section id="export" class="stack hidden">
+          <p class="muted">Export generated emails to CSV for mail merge or to use with your sending tool. Columns: <span class="code">to_email, subject, body, name, company, ...</span></p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <button class="btn acc" onclick="exportCSV()">Download CSV</button>
+            <button class="btn" onclick="exportJSON()">Download JSON</button>
+            <span class="muted" id="exportStatus"></span>
+          </div>
+        </section>
+
+        <!-- Help -->
+        <section id="help" class="stack hidden">
+          <div class="row">
+            <div class="stack">
+              <h3 style="margin:0">Templating syntax</h3>
+              <ul class="muted">
+                <li><b>Variables:</b> <span class="code">{{name}}</span>, <span class="code">{{company}}</span> — pulled from CSV. <i>Special:</i> <span class="code">{{fromName}}</span> comes from Compose tab.</li>
+                <li><b>Spintax:</b> <span class="code">{hi|hey|hello}</span> picks one option per variation.</li>
+                <li><b>Nested spintax:</b> <span class="code">{{{chat|10‑min call}}}</span> → braces tripled inside text to avoid collision.</li>
+                <li><b>Conditionals:</b> <span class="code">[[notes? I liked {{notes}}. | ]]</span> → includes left text if <span class="code">notes</span> exists, else right part.</li>
+              </ul>
+              <div class="alert">Everything runs locally in your browser. No data leaves your device. Perfect for users who can’t afford a stack of subscriptions.</div>
+            </div>
+            <div class="stack">
+              <h3 style="margin:0">Deploy tonight</h3>
+              <ol class="muted">
+                <li>Upload this HTML file (or the zip) to Netlify / GitHub Pages / Vercel as a static site.</li>
+                <li>Brand it: search for <span class="code">OnRampAI</span> in the file and replace with your product name + logo emoji.</li>
+                <li>Monetize: toggle <b>Require license</b> and add keys in the code (see <span class="code">LICENSE_KEYS</span>). Sell keys manually; send by email.</li>
+              </ol>
+              <div class="alert">Client‑side license is a speed bump (not secure). It’s enough to prove demand and collect first dollars without subscriptions.</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="footer">Made with 💚 for builders who hate bloat. This app is yours — edit, brand, resell.</div>
+  </div>
+
+  <script>
+    // --------------------------
+    // Basic client-side licensing
+    // --------------------------
+    let LICENSE_REQUIRED = false; // flip true to require key
+    const LICENSE_KEYS = ["DEMO-123", "OPENCREATE-STARTER-001"]; // add keys you sell
+    const licenseStatusEl = document.getElementById('licenseStatus');
+    const licenseInputEl = document.getElementById('licenseKeyInput');
+
+    function toggleLicenseRequired(){
+      LICENSE_REQUIRED = document.getElementById('toggleLicense').checked;
+      updateGate();
+    }
+    function checkLicense(){ updateGate(); }
+    function updateGate(){
+      const key = (licenseInputEl.value||'').trim();
+      const ok = !LICENSE_REQUIRED || LICENSE_KEYS.includes(key);
+      licenseStatusEl.textContent = ok ? (LICENSE_REQUIRED? 'Unlocked (valid key)' : 'Unlocked (free mode)') : 'Locked — enter valid key';
+      document.body.dataset.locked = ok? '0':'1';
+      const controls = document.querySelectorAll('#tabs button, #compose input, #compose textarea, #compose button, #leads button, #generate button, #export button, #csvInput, #csvInput2');
+      controls.forEach(el=>{ el.disabled = !ok; el.style.opacity = ok? '1' : '0.5'; });
+    }
+
+    // --------------------------
+    // State
+    // --------------------------
+    let leads = []; // array of objects
+    let headers = ['name','company','email','title','notes'];
+    let generated = []; // array of {to_email, subject, body, ...lead}
+
+    // UI helpers
+    function showTab(id){
+      document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
+      document.querySelectorAll('#tab-content > section').forEach(s=>s.classList.toggle('hidden', s.id!==id));
+      if(id==='leads'){ renderTable(); }
+    }
+
+    // --------------------------
+    // CSV utils
+    // --------------------------
+    function csvToRows(text){
+      // Simple CSV parser (supports quotes)
+      const rows=[]; let i=0; let cur=''; let row=[]; let inQ=false;
+      while(i<text.length){
+        const c=text[i];
+        if(inQ){
+          if(c=='\"' && text[i+1]=='\"'){ cur+='\"'; i++; }
+          else if(c=='\"'){ inQ=false; }
+          else cur+=c;
+        } else {
+          if(c=='\"'){ inQ=true; }
+          else if(c==','){ row.push(cur); cur=''; }
+          else if(c=='\\n' || c=='\\r'){ if(cur!=='' || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; }
+            // handle \\r\\n
+            if(c=='\\r' && text[i+1]=='\\n') i++;
+          }
+          else cur+=c;
+        }
+        i++;
+      }
+      if(cur!=='' || row.length) { row.push(cur); rows.push(row); }
+      return rows.filter(r=>r.some(cell=>cell.trim()!==''));
+    }
+    function rowsToCSV(rows){
+      return rows.map(r=>r.map(cell=>{
+        const s = String(cell ?? '');
+        return (s.includes(',')||s.includes('\\n')||s.includes('\"'))? '\"'+s.replaceAll('\"','\"\"')+'\"' : s;
+      }).join(',')).join('\\n');
+    }
+
+    function handleCSVUpload(e){
+      const file=e.target.files[0]; if(!file) return;
+      const reader=new FileReader();
+      reader.onload=()=>{
+        const rows=csvToRows(reader.result);
+        if(!rows.length) return;
+        headers = rows[0].map(h=>h.trim())
+        leads = rows.slice(1).map(r=>Object.fromEntries(headers.map((h,idx)=>[h, r[idx]||''])));
+        document.getElementById('leadCount').textContent = leads.length+" leads";
+        renderTable();
+      }
+      reader.readAsText(file);
+    }
+
+    function downloadSample(){
+      const sampleHeaders=['name','company','email','title','notes','benefit','pain','win1','win2','win3'];
+      const sampleRows=[
+        ['Sam','Northwind','sam@northwind.io','Ops Lead','moved from spreadsheets','more demos','another tool','optimize onboarding','publish 3 emails','set up tracking'],
+        ['Alex','Contoso','alex@contoso.com','Founder','hiring SDRs','faster leads','agency retainers','landing page tune‑up','ICP email pack','simple CRM view']
+      ];
+      const csv = rowsToCSV([sampleHeaders, ...sampleRows]);
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='opencreate-sample-leads.csv'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    // --------------------------
+    // Table rendering/editing
+    // --------------------------
+    function renderTable(){
+      const thead=document.querySelector('#leadTable thead');
+      const tbody=document.querySelector('#leadTable tbody');
+      if(!headers.length){ thead.innerHTML=''; tbody.innerHTML=''; return; }
+      thead.innerHTML = '<tr>'+headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')+ '</tr>';
+      tbody.innerHTML = leads.map((lead,ri)=>{
+        return '<tr>'+headers.map(h=>{
+          const val = lead[h]??'';
+          return `<td contenteditable oninput="editCell(${ri}, '${cssEscape(h)}', this.textContent)">${escapeHtml(val)}</td>`
+        }).join('')+ '</tr>'
+      }).join('');
+      document.getElementById('leadCount').textContent = (leads.length||0)+" leads";
+    }
+    function cssEscape(s){ return s.replace(/'/g,"&#39;"); }
+    function editCell(rowIdx, key, val){
+      try{ key = key.replace(/&#39;/g, "'"); }catch{}
+      leads[rowIdx][key]=val;
+    }
+    function addRow(){
+      if(!headers.length){ headers=['name','company','email','title','notes']; }
+      const empty = Object.fromEntries(headers.map(h=>[h,'']));
+      leads.push(empty); renderTable();
+    }
+
+    // --------------------------
+    // Template engine (variables, spintax, conditionals)
+    // --------------------------
+    function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+    function applySpintax(text){
+      const rx=/\\{([^{}]+)\\}/g; // {a|b|c}
+      return text.replace(rx,(_,body)=>{
+        const opts=body.split('|');
+        return opts[Math.floor(Math.random()*opts.length)]||'';
+      });
+    }
+    function applyConditionals(text, ctx){
+      // [[field? yes | no]] — field truthy in ctx
+      const rx=/\\[\\[\\s*([a-zA-Z0-9_]+)\\s*\\?\\s*([\\s\\S]*?)\\|\\s*([\\s\\S]*?)\\]\\]/g;
+      return text.replace(rx,(_,field,yes,no)=>{
+        const v = ctx[field];
+        return (v!==undefined && String(v).trim()!=='')? yes : no;
+      });
+    }
+    function renderTemplate(text, ctx){
+      // Allow {{fromName}} from UI
+      text = text.replace(/\\{\\{fromName\\}\\}/g, document.getElementById('fromName').value||'');
+      // conditionals first
+      text = applyConditionals(text, ctx);
+      // variables {{var}}
+      text = text.replace(/\\{\\{\\s*([a-zA-Z0-9_]+)\\s*\\}\\}/g, (_,k)=> ctx[k] ?? '');
+      // spintax last (supports nested by running twice)
+      text = applySpintax(text);
+      text = applySpintax(text);
+      return text;
+    }
+
+    function parseDefaults(){
+      try{
+        const raw=document.getElementById('defaultsJson').value.trim();
+        return raw? JSON.parse(raw) : {};
+      }catch(e){ alert('Defaults JSON invalid.'); return {}; }
+    }
+
+    // --------------------------
+    // Generate
+    // --------------------------
+    function generateAll(){
+      const subjectTpl=document.getElementById('subjectTpl').value||'';
+      const bodyTpl=document.getElementById('bodyTpl').value||'';
+      const variations=parseInt(document.getElementById('variations').value||'1');
+      const defaults=parseDefaults();
+      if(!leads.length){ alert('Import some leads first.'); return; }
+      generated=[];
+      const out=document.getElementById('output'); out.innerHTML='';
+      leads.forEach(lead=>{
+        const ctx={...defaults, ...lead};
+        for(let i=0;i<variations;i++){
+          const subj = renderTemplate(subjectTpl, ctx);
+          const body = renderTemplate(bodyTpl, ctx);
+          const item={to_email: lead.email||'', subject: subj, body, ...lead};
+          generated.push(item);
+          const card=document.createElement('div'); card.className='card';
+          card.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b>${escapeHtml(item.to_email||'(no email)')}</b><br><span class='muted'>${escapeHtml(item.name||'')} • ${escapeHtml(item.company||'')}</span></div><div style='display:flex;gap:8px'><button class='btn' onclick='copyText(${generated.length-1})'>Copy</button></div></div><div class='hr'></div><div class='muted'>Subject</div><div style='margin-bottom:8px'>${escapeHtml(subj)}</div><div class='muted'>Body</div><pre class='code' style='white-space:pre-wrap'>${escapeHtml(body)}</pre>`;
+          out.appendChild(card);
+        }
+      });
+      document.getElementById('genCount').textContent = `${generated.length} messages ready`;
+    }
+    function copyText(idx){
+      const g=generated[idx]; if(!g) return;
+      const text=`Subject: ${g.subject}\n\n${g.body}`;
+      navigator.clipboard.writeText(text);
+    }
+    function copyAll(){
+      if(!generated.length){ alert('Nothing generated.'); return; }
+      const block = generated.map(g=>`To: ${g.to_email}\nSubject: ${g.subject}\n\n${g.body}\n\n---`).join('\n');
+      navigator.clipboard.writeText(block);
+    }
+
+    // --------------------------
+    // Export
+    // --------------------------
+    function exportCSV(){
+      if(!generated.length){ alert('Generate messages first.'); return; }
+      const cols = Array.from(new Set(['to_email','subject','body', ...headers]));
+      const rows = [cols, ...generated.map(g=>cols.map(c=>g[c]??''))];
+      const csv=rowsToCSV(rows);
+      const blob=new Blob([csv],{type:'text/csv'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='opencreate-generated.csv'; a.click(); URL.revokeObjectURL(url);
+      document.getElementById('exportStatus').textContent='Downloaded CSV.';
+    }
+    function exportJSON(){
+      if(!generated.length){ alert('Generate messages first.'); return; }
+      const blob=new Blob([JSON.stringify(generated,null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='opencreate-generated.json'; a.click(); URL.revokeObjectURL(url);
+      document.getElementById('exportStatus').textContent='Downloaded JSON.';
+    }
+
+    // --------------------------
+    // Save / Load project (localStorage)
+    // --------------------------
+    function saveProject(){
+      const data={
+        subjectTpl: document.getElementById('subjectTpl').value,
+        bodyTpl: document.getElementById('bodyTpl').value,
+        fromName: document.getElementById('fromName').value,
+        defaultsJson: document.getElementById('defaultsJson').value,
+        headers, leads
+      };
+      localStorage.setItem('opencreate_project', JSON.stringify(data));
+      alert('Saved locally.');
+    }
+    function loadProject(){
+      const raw=localStorage.getItem('opencreate_project');
+      if(!raw){ alert('Nothing saved yet.'); return; }
+      const data=JSON.parse(raw);
+      document.getElementById('subjectTpl').value=data.subjectTpl||'';
+      document.getElementById('bodyTpl').value=data.bodyTpl||'';
+      document.getElementById('fromName').value=data.fromName||'';
+      document.getElementById('defaultsJson').value=data.defaultsJson||'';
+      headers=data.headers||headers; leads=data.leads||[]; renderTable();
+      alert('Loaded.');
+    }
+    function clearProject(){ if(confirm('Clear saved project + leads?')){ localStorage.removeItem('opencreate_project'); leads=[]; headers=['name','company','email','title','notes']; renderTable(); }}
+
+    // init
+    updateGate();
+    // preload friendly defaults
+    document.getElementById('subjectTpl').value = '{Quick idea|Small win} for {{company}}';
+    document.getElementById('bodyTpl').value = '{Hi|Hey|Hello} {{name}},
+
+We help teams like {{company}} get {{benefit}} without {{pain}}. [[notes? Your note about {{notes}} stood out.|]]
+
+3 fast wins we can deliver this week:
+- {{win1}}
+- {{win2}}
+- {{win3}}
+
+Open to a {{{chat|10‑min call}}}?
+— {{fromName}}';
+    document.getElementById('defaultsJson').value = JSON.stringify({benefit:'more qualified demos', pain:'adding another tool', win1:'optimize your landing', win2:'ship 3 high‑converting emails', win3:'set up basic tracking'}, null, 2);
+    document.getElementById('fromName').value = 'Alex from OnRampAI';
+  </script>
+</body>
+</html>
